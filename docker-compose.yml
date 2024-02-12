@@ -1,0 +1,93 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    networks:
+      - my_network
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=service
+      - MONGO_INITDB_ROOT_USERNAME=mongoadmin
+      - MONGO_INITDB_ROOT_PASSWORD=secret
+    volumes:
+      - ./mongo_data:/data/db
+      - ./mongo_init:/docker-entrypoint-initdb.d
+    networks:
+      - my_network
+
+  airflow-webserver:
+    build: .
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=Local
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__FERNET_KEY=9CxsH6RQfn7xygbTNdozI-NX6Ihc4wFB25si1ARo7kA=
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__MONGO__CONN_ID=mongo_default
+      - AIRFLOW__MONGO__CONN_URI=mongodb://mongoadmin:secret@mongo:27017/service
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./sample:/opt/airflow/dbt/sample
+    command: webserver
+    networks:
+      - my_network
+
+
+  airflow-scheduler:
+    build: .
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__FERNET_KEY=9CxsH6RQfn7xygbTNdozI-NX6Ihc4wFB25si1ARo7kA=
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__MONGO__CONN_ID=mongo_default
+      - AIRFLOW__MONGO__CONN_URI=mongodb://mongoadmin:secret@mongo:27017/service
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./sample:/opt/airflow/dbt/sample
+    command: scheduler
+    networks:
+      - my_network
+
+
+  airflow-init:
+    image: apache/airflow:2.2.3
+    environment:
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+    depends_on:
+      - postgres
+    entrypoint: /bin/bash
+    command: >
+      -c "airflow db init &&
+          airflow users create --username airflow --firstname Airflow --lastname Admin --role Admin --email admin@example.com --password airflow"
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge
+
+
