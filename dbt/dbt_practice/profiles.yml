@@ -1,0 +1,12 @@
+default:
+  outputs:
+    dev:
+      type: postgres
+      threads: 1
+      host: practice-db
+      port: 5432
+      user: practice
+      pass: practice
+      dbname: practice
+      schema: practice
+  target: dev

@@ -1,0 +1,55 @@
+name: 'dbt_practice'
+version: '1.0.0'
+config-version: 2
+
+profile: 'default'
+
+source-paths: ["models"]
+analysis-paths: ["analysis"]
+test-paths: ["tests"]
+data-paths: ["data"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_modules"
+
+models:
+  dbt_practice:
+    staging:
+      +schema: staging
+      +materialized: table
+      +tags: ["staging"]
+    marts:
+      +schema: marts
+      +materialized: table
+      +tags: ["marts"]
+    bi_views:
+      +schema: bi_views
+      +materialized: view
+      +tags: ["bi_views"]
+
+
+seeds:
+  dbt_practice:
+    last_upload:
+      +file: 'data/last_upload.csv'
+      +materialized: seed
+      +schema: staging
+      +column_types:
+        _id: text
+        name: text
+        email: text
+        timestamp: timestamp
+        status: text
+        score: numeric
+        comments: text
+        origin: json
+        age: numeric
+        additional_info: json
+        transaction_time: timestamp
+        data_source: text
+
+
