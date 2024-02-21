@@ -11,6 +11,19 @@ services:
     networks:
       - my_network
 
+  practice-db:
+    image: postgres:latest
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=practice
+      - POSTGRES_PASSWORD=practice
+      - POSTGRES_DB=practice
+    volumes:
+      - ./practice_data:/var/lib/postgresql/data
+    networks:
+      - my_network
+
   mongo:
     image: mongo:latest
     ports:
@@ -39,13 +52,19 @@ services:
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - AIRFLOW__MONGO__CONN_ID=mongo_default
       - AIRFLOW__MONGO__CONN_URI=mongodb://mongoadmin:secret@mongo:27017/service
+      - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=60
+      - AIRFLOW__SMTP__SMTP_HOST=mailhog
+      - AIRFLOW__SMTP__SMTP_STARTTLS=False
+      - AIRFLOW__SMTP__SMTP_SSL=False
+      - AIRFLOW__SMTP__SMTP_PORT=1025
+      - AIRFLOW__SMTP__SMTP_MAIL_FROM=arina.makunina@mail.ru
     ports:
       - "8080:8080"
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
-      - ./sample:/opt/airflow/dbt/sample
+      - ./dbt:/opt/airflow/dbt
     command: webserver
     networks:
       - my_network
@@ -63,11 +82,17 @@ services:
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - AIRFLOW__MONGO__CONN_ID=mongo_default
       - AIRFLOW__MONGO__CONN_URI=mongodb://mongoadmin:secret@mongo:27017/service
+      - AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT=60
+      - AIRFLOW__SMTP__SMTP_HOST=mailhog
+      - AIRFLOW__SMTP__SMTP_STARTTLS=False
+      - AIRFLOW__SMTP__SMTP_SSL=False
+      - AIRFLOW__SMTP__SMTP_PORT=1025
+      - AIRFLOW__SMTP__SMTP_MAIL_FROM=arina.makunina@mail.ru
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
-      - ./sample:/opt/airflow/dbt/sample
+      - ./dbt:/opt/airflow/dbt
     command: scheduler
     networks:
       - my_network
@@ -83,8 +108,19 @@ services:
     command: >
       -c "airflow db init &&
           airflow users create --username airflow --firstname Airflow --lastname Admin --role Admin --email admin@example.com --password airflow"
+    volumes:
+      - ./dbt:/opt/airflow/dbt
     networks:
       - my_network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - my_network
+
 
 networks:
   my_network:

@@ -13,6 +13,11 @@ RUN apt-get update -y && \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+RUN echo "airflow:airflow" | chpasswd
+
+RUN echo "airflow ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/airflow && \
+    chmod 0440 /etc/sudoers.d/airflow
+
 USER airflow
 
 RUN pip install --no-cache-dir 'apache-airflow[postgres, mongo]'
